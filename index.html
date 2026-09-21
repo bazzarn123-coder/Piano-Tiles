@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Piano Tiles 100 Songs</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%2316162c%22/><rect x=%2215%22 y=%2220%22 width=%2215%22 height=%2260%22 rx=%225%22 fill=%22%23ffffff%22/><rect x=%2235%22 y=%2220%22 width=%2215%22 height=%2260%22 rx=%225%22 fill=%22%234a4ae2%22/><rect x=%2255%22 y=%2220%22 width=%2215%22 height=%2260%22 rx=%225%22 fill=%22%23ffffff%22/><rect x=%2275%22 y=%2220%22 width=%2215%22 height=%2260%22 rx=%225%22 fill=%22%234cd137%22/></svg>">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-user-select:none;}
+body{background-color:#1a1a2e;color:#ffffff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;height:100dvh;overflow:hidden;touch-action:manipulation;}
+#game-container{width:100%;max-width:450px;height:100dvh;max-height:800px;background-color:#0f0f1a;position:relative;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 20px rgba(0,0,0,0.8);border-left:2px solid #2a2a40;border-right:2px solid #2a2a40;margin-bottom:env(safe-area-inset-bottom, 0px);}
+#header{height:70px;display:flex;justify-content:space-around;align-items:center;background:#16162c;border-bottom:2px solid #2a2a40;z-index:10;}
+.stat-box{text-align:center;}
+.stat-label{font-size:10px;color:#8a8aab;text-transform:uppercase;letter-spacing:1px;}
+.stat-value{font-size:18px;font-weight:bold;color:#fff;}
+#board{flex:1;position:relative;background:#ffffff;overflow:hidden;display:flex;}
+.lane{flex:1;height:100%;border-right:1px solid #e0e0e0;position:relative;}
+.lane:last-child{border-right:none;}
+.tile{position:absolute;width:100%;background-color:#111122;border-bottom:4px solid #4a4ae2;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#4a4ae2;font-weight:bold;font-size:14px;}
+.tile.hit{background-color:#4cd137 !important;border-bottom-color:#2ecc71 !important;}
+.tile.missed{background-color:#e74c3c !important;}
+#keys-container{height:110px;display:flex;background:#121222;border-top:2px solid #2a2a40;z-index:6;}
+.piano-key{flex:1;height:100%;background:#1a1a2e;border-right:1px solid #2a2a40;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:15px;cursor:pointer;touch-action:manipulation;}
+.piano-key:last-child{border-right:none;}
+.piano-key.active{background:#3a3a5e;}
+.key-label{font-size:14px;color:#8a8aab;font-weight:bold;}
+.overlay{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(15, 15, 26, 0.98);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:100;text-align:center;padding:15px;overflow-y:auto;}
+h1{font-size:26px;margin-bottom:5px;color:#fff;letter-spacing:2px;}
+p{color:#8a8aab;margin-bottom:10px;font-size:13px;}
+.btn{background:#4a4ae2;color:white;border:none;padding:10px 25px;font-size:14px;font-weight:bold;border-radius:25px;cursor:pointer;box-shadow:0 4px 15px rgba(74, 74, 226, 0.4);margin:5px 0;width:100%;max-width:280px;}
+.btn:active{transform:scale(0.95);background:#3b3bc2;}
+.btn-secondary{background:#2a2a40;box-shadow:none;}
+.song-list{display:flex;flex-direction:column;gap:8px;width:100%;max-width:320px;margin-bottom:12px;max-height:240px;overflow-y:auto;padding-right:4px;}
+.song-card{background:#16162c;border:2px solid #2a2a40;padding:10px 12px;border-radius:12px;cursor:pointer;text-align:left;transition:all 0.2s;}
+.song-card:hover,.song-card.selected{border-color:#4a4ae2;background:#1e1e38;}
+.song-name{font-weight:bold;font-size:13px;color:#fff;}
+.song-composer{font-size:10px;color:#8a8aab;margin-top:2px;}
+input[type="text"]{width:100%;max-width:280px;padding:8px;background:#16162c;border:2px solid #2a2a40;color:white;font-size:14px;border-radius:10px;text-align:center;margin-bottom:8px;outline:none;}
+input[type="text"]:focus{border-color:#4a4ae2;}
+.leaderboard-box{width:100%;max-width:300px;background:#16162c;border-radius:10px;padding:8px;margin-bottom:10px;border:1px solid #2a2a40;}
+.leaderboard-title{font-size:10px;color:#4cd137;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;font-weight:bold;}
+.lb-row{display:flex;justify-content:space-between;font-size:11px;padding:2px 4px;border-bottom:1px solid #22223b;}
+.lb-row:last-child{border-bottom:none;}
+.hidden{display:none !important;}
+</style>
+</head>
+<body>
+<div id="game-container">
+<div id="header">
+<div class="stat-box"><div class="stat-label">Score</div><div id="score-display" class="stat-value">0</div></div>
+<div class="stat-box"><div class="stat-label">Combo</div><div id="combo-display" class="stat-value">0x</div></div>
+<div class="stat-box"><div class="stat-label">Song Best</div><div id="best-display" class="stat-value">0</div></div>
+</div>
+<div id="board">
+<div class="lane" data-lane="0"></div><div class="lane" data-lane="1"></div><div class="lane" data-lane="2"></div><div class="lane" data-lane="3"></div>
+</div>
+<div id="keys-container">
+<div class="piano-key" data-lane="0"><span class="key-label">A</span></div>
+<div class="piano-key" data-lane="1"><span class="key-label">S</span></div>
+<div class="piano-key" data-lane="2"><span class="key-label">D</span></div>
+<div class="piano-key" data-lane="3"><span class="key-label">F</span></div>
+</div>
+<div id="menu-screen" class="overlay">
+<h1>PIANO TILES</h1><p>Select a song from 100 tracks:</p>
+<div class="song-list" id="song-list"></div>
+<button id="start-btn" class="btn">START GAME</button>
+</div>
+<div id="gameover-screen" class="overlay hidden">
+<h1>GAME OVER</h1><p id="gameover-reason">You missed a tile!</p>
+<div style="margin-bottom:6px;"><div class="stat-label">Final Score</div><div id="final-score" style="font-size:22px;font-weight:bold;color:#4a4ae2;">0</div></div>
+<div id="name-input-container">
+<p style="font-size:10px;margin-bottom:3px;">Enter your name for high score:</p>
+<input type="text" id="player-name" placeholder="Player Name" maxlength="12" value="Player">
+<button id="save-score-btn" class="btn" style="margin-bottom:6px;">SAVE SCORE</button>
+</div>
+<div class="leaderboard-box">
+<div class="leaderboard-title">Top Scores for this Song</div>
+<div id="leaderboard-content"></div>
+</div>
+<button id="restart-btn" class="btn">PLAY AGAIN</button>
+<button id="menu-btn" class="btn btn-secondary">CHOOSE SONG</button>
+</div>
+</div>
+<script>
+const baseMelodies=[
+[523.25,587.33,659.25,698.46,783.99,880.00,987.77,1046.50,987.77,880.00,783.99,698.46,659.25],
+[392.00,392.00,466.16,523.25,392.00,392.00,349.23,369.99,392.00,392.00,466.16,523.25,587.33,554.37],
+[261.63,392.00,349.23,329.63,293.66,523.25,392.00,349.23,329.63,293.66,523.25,392.00,349.23,329.63,349.23,293.66],
+[659.25,493.88,523.25,587.33,523.25,493.88,440.00,440.00,523.25,659.25,587.33,523.25,493.88,523.25,587.33,659.25,523.25,440.00,440.00],
+[329.63,329.63,329.63,329.63,329.63,329.63,329.63,392.00,261.63,293.66,329.63,349.23,349.23,349.23,349.23,349.23,329.63,329.63,329.63,329.63,293.66,293.66,329.63,293.66,392.00],
+[349.23,349.23,415.30,392.00,349.23,349.23,415.30,392.00,311.13,311.13,349.23,415.30,415.30,392.00,349.23,349.23],
+[659.25,622.25,659.25,622.25,659.25,493.88,587.33,523.25,440.00,329.63,392.00,440.00,493.88,415.30,493.88,523.25],
+[329.63,329.63,349.23,392.00,392.00,349.23,329.63,293.66,261.63,261.63,293.66,329.63,329.63,293.66,293.66],
+[261.63,261.63,392.00,392.00,440.00,440.00,392.00,349.23,349.23,329.63,329.63,293.66,293.66,261.63],
+[261.63,293.66,329.63,349.23,392.00,440.00,493.88,523.25,493.88,440.00,392.00,349.23,329.63,293.66,261.63]
+];
+
+const songTitles = [
+"Golden (K-Pop Demon Hunters)", "Bad Guy", "Blinding Lights", "As It Was", "Flowers", 
+"Levitating", "Watermelon Sugar", "Stay", "Anti-Hero", "Uptown Funk", 
+"Shape of You", "Dance the Night", "Vampire", "Kill Bill", "Flowers", 
+"Peaches", "Drivers License", "Good 4 U", "Dynamite", "Butter", 
+"Permission to Dance", "Boy With Luv", "Ice Cream", "How You Like That", "Pink Venom", 
+"Shut Down", "Monsters", "Stereo Hearts", "Payphone", "Locked Out of Heaven", 
+"Treasure", "Just the Way You Are", "Counting Stars", "Demons", "Radioactive", 
+"Believer", "Thunder", "Natural", "Demons", "Enemy", 
+"Star Trek Theme", "Mission Impossible", "Star Wars Theme", "Tetris Theme", "Jingle Bells", 
+"Für Elise", "Ode to Joy", "Twinkle Twinkle", "Moonlight Sonata", "Canon in D", 
+"Swan Lake", "The Nutcracker", "Gymnopédie No.1", "Clair de Lune", "The Four Seasons", 
+"Air on the G String", "Minuet in G", "Turkish March", "William Tell Overture", "Peer Gynt Suite", 
+"The Magic Flute", "Carmen Habanera", "The Blue Danube", "Tritsch-Tratsch-Polka", "Radetzky March", 
+"Rhapsody in Blue", "The Planets - Mars", "Boléro", "1812 Overture", "Ride of the Valkyries", 
+"Hall of the Mountain King", "Dance of the Sugar Plum", "Flight of the Bumblebee", "Pomp and Circumstance", "Goldberg Variations", 
+"Fantaisie-Impromptu", "Revolutionary Etude", "Minute Waltz", "Raindrop Prelude", "Heroic Polonaise", 
+"Ballade No. 1", "Scherzo No. 2", "Barcarolle", "Berceuse", "Tarantella", 
+"Pavane", "Je te veux", "Gnossienne No. 1", "Sarabande", "Passacaglia", 
+"Chaconne", "Art of Fugue", "Well-Tempered Clavier", "Tocatta and Fugue", "Water Music", 
+"Royal Fireworks", "Dixit Dominus", "St. Matthew Passion", "Messiah - Hallelujah", "Final Opus 100"
+];
+
+const songs = [];
+for(let i=0; i<100; i++){
+    let base = baseMelodies[i % baseMelodies.length];
+    let melody = base.map((f, idx) => Number((f * (1 + (i % 5) * 0.05)).toFixed(2)));
+    songs.push({
+        id: 'song_' + (i + 1),
+        name: songTitles[i] || ('Song ' + (i + 1)),
+        composer: i === 0 ? 'Huntrix (K-Pop Demon Hunters)' : (i < 40 ? 'Pop Smash Recreation' : 'Classical Masterpiece'),
+        melody: melody
+    });
+}
+
+let currentSongIndex = 0;
+let score = 0;
+let combo = 0;
+let gameActive = false;
+let gameSpeed = 3.5;
+let spawnInterval = 800;
+let lastSpawnTime = 0;
+let tiles = [];
+let audioCtx = null;
+let scoreSaved = false;
+
+const board = document.getElementById('board');
+const lanes = document.querySelectorAll('.lane');
+const scoreDisplay = document.getElementById('score-display');
+const comboDisplay = document.getElementById('combo-display');
+const bestDisplay = document.getElementById('best-display');
+const menuScreen = document.getElementById('menu-screen');
+const gameOverScreen = document.getElementById('gameover-screen');
+const songListContainer = document.getElementById('song-list');
+const startBtn = document.getElementById('start-btn');
+const restartBtn = document.getElementById('restart-btn');
+const menuBtn = document.getElementById('menu-btn');
+const saveScoreBtn = document.getElementById('save-score-btn');
+const playerNameInput = document.getElementById('player-name');
+const nameInputContainer = document.getElementById('name-input-container');
+const leaderboardContent = document.getElementById('leaderboard-content');
+const keys = document.querySelectorAll('.piano-key');
+
+function initSongList() {
+    songListContainer.innerHTML = '';
+    songs.forEach((song, index) => {
+        const card = document.createElement('div');
+        card.className = `song-card ${index === currentSongIndex ? 'selected' : ''}`;
+        card.innerHTML = `<div class="song-name">${song.name}</div><div class="song-composer">${song.composer}</div>`;
+        card.addEventListener('click', () => {
+            currentSongIndex = index;
+            document.querySelectorAll('.song-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            updateBestDisplay();
+        });
+        songListContainer.appendChild(card);
+    });
+    updateBestDisplay();
+}
+
+function getLeaderboard(songId) {
+    const data = localStorage.getItem('piano_lb_' + songId);
+    return data ? JSON.parse(data) : [];
+}
+
+function saveLeaderboard(songId, lb) {
+    localStorage.setItem('piano_lb_' + songId, JSON.stringify(lb));
+}
+
+function updateBestDisplay() {
+    const currentSong = songs[currentSongIndex];
+    const lb = getLeaderboard(currentSong.id);
+    bestDisplay.innerText = lb.length > 0 ? lb[0].score : 0;
+}
+
+function renderLeaderboard() {
+    const currentSong = songs[currentSongIndex];
+    const lb = getLeaderboard(currentSong.id);
+    if (lb.length === 0) {
+        leaderboardContent.innerHTML = `<div class="lb-row"><span>No scores yet</span><span>-</span></div>`;
+        return;
+    }
+    leaderboardContent.innerHTML = '';
+    lb.slice(0, 5).forEach((entry, idx) => {
+        const row = document.createElement('div');
+        row.className = 'lb-row';
+        row.innerHTML = `<span>${idx + 1}. ${escapeHtml(entry.name)}</span><span>${entry.score}</span>`;
+        leaderboardContent.appendChild(row);
+    });
+}
+
+function escapeHtml(str) {
+    return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+}
+
+function initAudio() {
+    if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+    }
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+}
+
+function playSongNote(index) {
+    initAudio();
+    try {
+        const currentSong = songs[currentSongIndex];
+        const freq = currentSong.melody[index % currentSong.melody.length];
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+        gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.5);
+    } catch (e) {
+        console.error("Audio error:", e);
+    }
+}
+
+function spawnTile() {
+    const laneIndex = Math.floor(Math.random() * 4);
+    const laneEl = lanes[laneIndex];
+
+    const tileEl = document.createElement('div');
+    tileEl.classList.add('tile');
+    const tileHeight = 130;
+    tileEl.style.height = tileHeight + 'px';
+    tileEl.style.top = -tileHeight + 'px';
+    
+    laneEl.appendChild(tileEl);
+
+    tiles.push({
+        element: tileEl,
+        lane: laneIndex,
+        y: -tileHeight,
+        height: tileHeight,
+        hit: false,
+        missed: false
+    });
+}
+
+function updateGame(timestamp) {
+    if (!gameActive) return;
+
+    if (!lastSpawnTime) lastSpawnTime = timestamp;
+    if (timestamp - lastSpawnTime > spawnInterval) {
+        spawnTile();
+        lastSpawnTime = timestamp;
+        gameSpeed = 3.5 + Math.min(score * 0.03, 7);
+        spawnInterval = Math.max(350, 800 - score * 3);
+    }
+
+    const boardHeight = board.clientHeight;
+    const missThreshold = boardHeight + 60;
+
+    for (let i = tiles.length - 1; i >= 0; i--) {
+        let tile = tiles[i];
+        tile.y += gameSpeed;
+        tile.element.style.top = tile.y + 'px';
+
+        if (!tile.hit && !tile.missed && tile.y > missThreshold) {
+            tile.missed = true;
+            tile.element.classList.add('missed');
+            triggerGameOver();
+            return;
+        }
+
+        if (tile.y > boardHeight + 150) {
+            tile.element.remove();
+            tiles.splice(i, 1);
+        }
+    }
+
+    requestAnimationFrame(updateGame);
+}
+
+function handleLaneAction(laneIndex) {
+    if (!gameActive) return;
+
+    const keyEl = keys[laneIndex];
+    keyEl.classList.add('active');
+    setTimeout(() => keyEl.classList.remove('active'), 80);
+
+    let targetTile = null;
+    let lowestY = -999;
+
+    for (let tile of tiles) {
+        if (tile.lane === laneIndex && !tile.hit && !tile.missed) {
+            if (tile.y > lowestY) {
+                lowestY = tile.y;
+                targetTile = tile;
+            }
+        }
+    }
+
+    const boardHeight = board.clientHeight;
+
+    if (targetTile && targetTile.y > -150 && targetTile.y <= boardHeight + 60) {
+        targetTile.hit = true;
+        targetTile.element.classList.add('hit');
+
+        playSongNote(score);
+
+        score++;
+        combo++;
+        scoreDisplay.innerText = score;
+        comboDisplay.innerText = combo + 'x';
+    } else {
+        triggerGameOver();
+    }
+}
+
+function triggerGameOver() {
+    gameActive = false;
+    scoreSaved = false;
+
+    document.getElementById('final-score').innerText = score;
+    nameInputContainer.classList.remove('hidden');
+    renderLeaderboard();
+    updateBestDisplay();
+
+    gameOverScreen.classList.remove('hidden');
+}
+
+function savePlayerScore() {
+    if (scoreSaved) return;
+    const name = playerNameInput.value.trim() || 'Player';
+    const currentSong = songs[currentSongIndex];
+    
+    let lb = getLeaderboard(currentSong.id);
+    lb.push({ name: name, score: score });
+    lb.sort((a, b) => b.score - a.score);
+    saveLeaderboard(currentSong.id, lb);
+
+    scoreSaved = true;
+    nameInputContainer.classList.add('hidden');
+    renderLeaderboard();
+    updateBestDisplay();
+}
+
+function startGame() {
+    initAudio();
+    tiles.forEach(t => t.element.remove());
+    tiles = [];
+    
+    score = 0;
+    combo = 0;
+    gameSpeed = 3.5;
+    spawnInterval = 800;
+    lastSpawnTime = 0;
+    scoreSaved = false;
+
+    scoreDisplay.innerText = score;
+    comboDisplay.innerText = combo + 'x';
+    updateBestDisplay();
+
+    menuScreen.classList.add('hidden');
+    gameOverScreen.classList.add('hidden');
+
+    gameActive = true;
+    requestAnimationFrame(updateGame);
+}
+
+keys.forEach(key => {
+    const laneIndex = parseInt(key.getAttribute('data-lane'));
+    key.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        handleLaneAction(laneIndex);
+    });
+});
+
+window.addEventListener('keydown', (e) => {
+    if (e.repeat) return;
+    const keyMap = { 'a': 0, 's': 1, 'd': 2, 'f': 3 };
+    const lowerKey = e.key.toLowerCase();
+    if (lowerKey in keyMap) {
+        handleLaneAction(keyMap[lowerKey]);
+    }
+});
+
+startBtn.addEventListener('click', startGame);
+restartBtn.addEventListener('click', startGame);
+saveScoreBtn.addEventListener('click', savePlayerScore);
+menuBtn.addEventListener('click', () => {
+    gameOverScreen.classList.add('hidden');
+    menuScreen.classList.remove('hidden');
+    initSongList();
+});
+
+initSongList();
+</script>
+</body>
+</html>
